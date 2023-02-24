@@ -19,8 +19,8 @@ sys_sysinfo(void){
 		return -1;
     // get the retval
     struct sysinfo si;
-    si.freemem = 10;
-    si.nproc = 10;
+    si.freemem = getFreeMem();
+    si.nproc = getUnusedProcNum();
 
     // set the retval
     if (copyout(p->pagetable, addr, (char *)&si, sizeof(struct sysinfo)) < 0)

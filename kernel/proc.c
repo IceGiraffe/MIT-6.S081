@@ -30,6 +30,21 @@ trace(int mask){
 }
 
 
+int
+getUnusedProcNum(void){
+  int pNum = 0;
+  struct proc *p;
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state != UNUSED) {
+      ++pNum;
+    }
+    
+    
+    release(&p->lock);
+  }
+  return pNum;
+}
 
 // initialize the proc table at boot time.
 void

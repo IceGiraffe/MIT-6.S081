@@ -21,6 +21,16 @@ static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
 
+
+int
+trace(int mask){
+  struct proc *p = myproc();
+  p->traceStatus |= mask;
+  return 0;
+}
+
+
+
 // initialize the proc table at boot time.
 void
 procinit(void)
@@ -126,7 +136,7 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
-
+  p->traceStatus = 0;
   return p;
 }
 
@@ -274,7 +284,7 @@ fork(void)
     return -1;
   }
   np->sz = p->sz;
-
+  np->traceStatus = p->traceStatus;
   np->parent = p;
 
   // copy saved user registers.

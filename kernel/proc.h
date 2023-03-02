@@ -1,3 +1,4 @@
+// 用于上下文切换，需保存寄存器的值
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -19,6 +20,7 @@ struct context {
 };
 
 // Per-CPU state.
+// myproc() 方法的实现借助于该数据结构
 struct cpu {
   struct proc *proc;          // The process running on this cpu, or null.
   struct context context;     // swtch() here to enter scheduler().
@@ -103,5 +105,5 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int traceStatus;
+  int traceStatus;             // for printing syscall tracing
 };

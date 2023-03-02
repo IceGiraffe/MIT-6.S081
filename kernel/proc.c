@@ -254,7 +254,7 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
-
+  printf("...The first process which acts like glue\n");
   release(&p->lock);
 }
 

@@ -10,6 +10,7 @@ volatile static int started = 0;
 void
 main()
 {
+  // 由 CPU0 执行系统的初始化
   if(cpuid() == 0){
     consoleinit();
     printfinit();

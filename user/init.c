@@ -24,7 +24,7 @@ main(void)
   dup(0);  // stderr
 
   for(;;){
-    printf("init: starting sh\n");
+    printf("...init: starting sh\n");
     pid = fork();
     if(pid < 0){
       printf("init: fork failed\n");
@@ -35,13 +35,16 @@ main(void)
       printf("init: exec sh failed\n");
       exit(1);
     }
-
-    for(;;){
+    printf("......start shell successfully\n");
+    for (;;)
+    {
+      printf("...the init waits in case shell exits\n");
       // this call to wait() returns if the shell exits,
       // or if a parentless process exits.
       wpid = wait((int *) 0);
       if(wpid == pid){
         // the shell exited; restart it.
+        printf("......shell exits, restart the shell\n");
         break;
       } else if(wpid < 0){
         printf("init: wait returned an error\n");

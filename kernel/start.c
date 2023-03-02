@@ -15,7 +15,7 @@ uint64 mscratch0[NCPU * 32];
 
 // assembly code in kernelvec.S for machine-mode timer interrupt.
 extern void timervec();
-
+// 先start，然后main，main调用init，然后调用shell
 // entry.S jumps here in machine mode on stack0.
 void
 start()
@@ -43,6 +43,7 @@ start()
 
   // keep each CPU's hartid in its tp register, for cpuid().
   int id = r_mhartid();
+  // tp = cpuid, cpuid()函数就是读这个reg，然后返回
   w_tp(id);
 
   // switch to supervisor mode and jump to main().

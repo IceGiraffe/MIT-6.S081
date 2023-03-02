@@ -8,11 +8,17 @@ _entry:
         # stack0 is declared in start.c,
         # with a 4096-byte stack per CPU.
         # sp = stack0 + (hartid * 4096)
+        # sp = stack0
         la sp, stack0
+        # a0 = 1024*4
         li a0, 1024*4
+        # a1 = cpuid
 	csrr a1, mhartid
+        # a1 = a1 + 1 = cpuid + 1
         addi a1, a1, 1
+        # a0 = 1024 * 4 * (cpuid + 1)
         mul a0, a0, a1
+        # sp = stack0 + 4K * (cpuid + 1)
         add sp, sp, a0
 	# jump to start() in start.c
         call start

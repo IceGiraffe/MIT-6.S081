@@ -20,6 +20,7 @@ struct run {
 
 struct {
   struct spinlock lock;
+  // 初始值为0
   struct run *freelist;
 } kmem;
 
@@ -27,9 +28,26 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  // PHYSTOP 定义了最大内存为128MB
   freerange(end, (void*)PHYSTOP);
 }
 
+
+/* 
+Thread 1 hit Hardware watchpoint 1: kmem.freelist
+
+Old value = (struct run *) 0x87ffe000
+New value = (struct run *) 0x87fff000
+kfree (pa=pa@entry=0x87fff000) at kernel/kalloc.c:63
+63        release(&kmem.lock);
+
+Thread 1 hit Hardware watchpoint 1: kmem.freelist
+
+Old value = (struct run *) 0x87fff000
+New value = (struct run *) 0x87ffe000
+kalloc () at kernel/kalloc.c:78
+78        release(&kmem.lock);
+ */
 void
 freerange(void *pa_start, void *pa_end)
 {

@@ -21,7 +21,9 @@ extern char trampoline[]; // trampoline.S
 void
 kvminit()
 {
+  // kalloc alloc a page of memory: 4KB
   kernel_pagetable = (pagetable_t) kalloc();
+  // PGSIZE = 4096
   memset(kernel_pagetable, 0, PGSIZE);
 
   // uart registers
@@ -439,4 +441,48 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void walkTablePrint(pagetable_t pagetable, int level){
+  // there are 2^9 = 512 PTEs in a page table.
+  char prefix[10];
+  if (level == 1)
+  {
+    strncpy(prefix, "..", sizeof(".."));
+  }
+  else if (level == 2){
+    strncpy(prefix, ".. ..", sizeof(".. .."));
+  }
+  else if(level == 3){
+    strncpy(prefix, ".. .. ..", sizeof(".. .. .."));
+  }
+  else {
+    return;
+  }
+  for (int i = 0; i < 512; i++)
+  {
+    // int * array...
+    pte_t pte = pagetable[i];
+    if((pte & PTE_V) && (pte & (PTE_R|PTE_W|PTE_X)) == 0){
+      // this PTE points to a lower-level page table.
+      uint64 child = PTE2PA(pte);
+      printf("%s%d: pte %p pa %p\n", prefix, i, pte, child);
+      walkTablePrint((pagetable_t)child, level + 1);
+    }
+    else if (pte & PTE_V)
+    {
+      uint64 child = PTE2PA(pte);
+      printf("%s%d: pte %p pa %p\n",prefix, i, pte, child);
+    }
+  }
+  return;
+}
+
+void
+vmprint(pagetable_t pagetable)
+{
+  // %p 打印指针
+  printf("page table %p\n", pagetable, 1);
+  walkTablePrint(pagetable, 1);
+  return;
 }

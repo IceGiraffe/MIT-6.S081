@@ -31,6 +31,7 @@ start()
   w_mepc((uint64)main);
 
   // disable paging for now.
+  // 如果satp寄存器为0，关闭MMU
   w_satp(0);
 
   // delegate all interrupts and exceptions to supervisor mode.

@@ -49,10 +49,14 @@
 
 // map the trampoline page to the highest address,
 // in both user and kernel space.
+// MAXVA = (0x7f'ffff'ffff + 1)
+// In fact MAXVA = (0x3f'ffff'ffff + 1) = 0x40'0000'0000
+// MAXVA本身是非法地址
 #define TRAMPOLINE (MAXVA - PGSIZE)
 
 // map kernel stacks beneath the trampoline,
 // each surrounded by invalid guard pages.
+// A kernel stack per process
 #define KSTACK(p) (TRAMPOLINE - ((p)+1)* 2*PGSIZE)
 
 // User memory layout.

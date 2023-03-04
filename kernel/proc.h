@@ -97,7 +97,9 @@ struct proc {
   // these are private to the process, so p->lock need not be held.
   uint64 kstack;               // Virtual address of kernel stack
   uint64 sz;                   // Size of process memory (bytes)
-  // task 2: use a single pgtbl for all processes.
+  // use single kernel page table per process.
+  pagetable_t kernel_pagetable;
+  // user page table
   pagetable_t pagetable;       // User page table
   struct trapframe *trapframe; // data page for trampoline.S
   struct context context;      // swtch() here to run process

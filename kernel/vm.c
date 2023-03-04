@@ -49,6 +49,42 @@ kvminit()
   kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
 }
 
+/* 
+ * kvm init per process
+ */
+void uvmmap(pagetable_t pt, uint64 va, uint64 pa, uint64 sz, int perm)
+{
+  if(mappages(pt, va, sz, pa, perm) != 0)
+    panic("user kernel vmmap");
+}
+void
+mykvminit(pagetable_t kpgtbl){
+  // PGSIZE = 4096
+  memset(kpgtbl, 0, PGSIZE);
+
+  // uart registers
+  uvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+
+  // virtio mmio disk interface
+  uvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+
+  // CLINT
+  uvmmap(kpgtbl, CLINT, CLINT, 0x10000, PTE_R | PTE_W);
+
+  // PLIC
+  uvmmap(kpgtbl, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+
+  // map kernel text executable and read-only.
+  uvmmap(kpgtbl, KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);
+
+  // map kernel data and the physical RAM we'll make use of.
+  uvmmap(kpgtbl, (uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W);
+
+  // map the trampoline for trap entry/exit to
+  // the highest virtual address in the kernel.
+  uvmmap(kpgtbl,TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+}
+
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void
@@ -142,7 +178,21 @@ kvmpa(uint64 va)
   pa = PTE2PA(*pte);
   return pa+off;
 }
-
+uint64
+vmpa(pagetable_t pt, uint64 va)
+{
+  uint64 off = va % PGSIZE;
+  pte_t *pte;
+  uint64 pa;
+  
+  pte = walk(pt, va, 0);
+  if(pte == 0)
+    panic("kvmpa");
+  if((*pte & PTE_V) == 0)
+    panic("kvmpa");
+  pa = PTE2PA(*pte);
+  return pa+off;
+}
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
@@ -200,6 +250,18 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 // returns 0 if out of memory.
 pagetable_t
 uvmcreate()
+{
+  pagetable_t pagetable;
+  pagetable = (pagetable_t) kalloc();
+  if(pagetable == 0)
+    return 0;
+  memset(pagetable, 0, PGSIZE);
+  return pagetable;
+}
+
+// for consistency
+pagetable_t
+kvmcreate()
 {
   pagetable_t pagetable;
   pagetable = (pagetable_t) kalloc();
@@ -381,6 +443,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
 int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
+  // return copyin_new(pagetable, dst, srcva, len);
   uint64 n, va0, pa0;
 
   while(len > 0){

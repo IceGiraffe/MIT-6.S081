@@ -42,6 +42,9 @@ kvminit()
   kvmmap(KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X);
 
   // map kernel data and the physical RAM we'll make use of.
+  // 所以实际上，kernel的pagetable是填满了的
+  // 因此，copyin通过process的页表翻译到物理地址，然后这个物理地址作为VA又过了一遍MMU，到了真正的物理地址
+  // 这两者相等，因为direct mapping
   kvmmap((uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W);
 
   // map the trampoline for trap entry/exit to

@@ -116,6 +116,10 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  if(u2k_pt(p->pagetable, p->kernel_pagetable, 0, p->sz) < 0){
+    goto bad;
+  }
+
   if(p->pid==1){
     vmprint(p->pagetable);
   }

@@ -5,7 +5,6 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-extern pagetable_t kernel_pagetable;
 
 struct cpu cpus[NCPU];
 
@@ -277,7 +276,7 @@ userinit(void)
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
-
+  u2k_pt(p->pagetable, p->kernel_pagetable, 0, p->sz);
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
   p->trapframe->sp = PGSIZE;  // user stack pointer
@@ -300,11 +299,18 @@ growproc(int n)
 
   sz = p->sz;
   if(n > 0){
-    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+    if(PGROUNDDOWN(sz+n)>=PLIC)
+      return -1;
+    if ((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0)
+    {
+      return -1;
+    }
+    if(u2k_pt(p->pagetable, p->kernel_pagetable, p->sz, sz)<0){
       return -1;
     }
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
+    sz = uvmdealloc_wo_defree(p->kernel_pagetable, p->sz, sz);
   }
   p->sz = sz;
   return 0;
@@ -345,6 +351,13 @@ fork(void)
     if(p->ofile[i])
       np->ofile[i] = filedup(p->ofile[i]);
   np->cwd = idup(p->cwd);
+
+  // from 0 to np->sz
+  if(u2k_pt(np->pagetable, np->kernel_pagetable, 0, np->sz) < 0){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
@@ -548,8 +561,7 @@ scheduler(void)
 #if !defined (LAB_FS)
     if(found == 0) {
       intr_on();
-      w_satp(MAKE_SATP(kernel_pagetable));
-      sfence_vma();
+      kvminithart();
       asm volatile("wfi");
     }
 #else
@@ -763,5 +775,3 @@ procdump(void)
 }
 
 
-// void
-// copyUser2Kernel(pagetable_t pt, pagetable_t kpt, )
